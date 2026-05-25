@@ -1,6 +1,15 @@
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.Timer;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -12,16 +21,23 @@ class Player {
     public Player(int x, int y) {
         this.x = x;
         this.y = y;
-        this.width =40;
+        this.width = 40;
         this.height = 40;
     }
 
-    public void moveLeft() { x -= speed; if (x < 0) x = 0; }
-    public void moveRight(int screenWidth) { x += speed; if (x + width > screenWidth) x = screenWidth - width; }
+    public void moveLeft() {
+        x -= speed;
+        if (x < 0) x = 0;
+    }
+
+    public void moveRight(int screenWidth) {
+        x += speed;
+        if (x + width > screenWidth) x = screenWidth - width;
+    }
 
     public void draw(Graphics g) {
         g.setColor(Color.BLUE);
-        g.fillRect(x, y, width, height); // simple rectangle player
+        g.fillRect(x, y, width, height);
     }
 
     public Rectangle getBounds() {
@@ -34,9 +50,14 @@ class Bullet {
     int x, y, width = 5, height = 10;
     int speed = 10;
 
-    public Bullet(int x, int y) { this.x = x; this.y = y; }
+    public Bullet(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 
-    public void update() { y -= speed; }
+    public void update() {
+        y -= speed;
+    }
 
     public void draw(Graphics g) {
         g.setColor(Color.RED);
@@ -53,13 +74,18 @@ class Enemy {
     int x, y, width = 40, height = 40;
     int speed = 4;
 
-    public Enemy(int x, int y) { this.x = x; this.y = y; }
+    public Enemy(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 
-    public void update() { y += speed; }
+    public void update() {
+        y += speed;
+    }
 
     public void draw(Graphics g) {
         g.setColor(Color.PINK);
-        g.fillRect(x, y, width, height); // simple rectangle enemy
+        g.fillRect(x, y, width, height);
     }
 
     public Rectangle getBounds() {
@@ -112,17 +138,28 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (!gameOver) {
-            // Update bullets
+            // Update bullets and remove those off-screen
             for (int i = 0; i < bullets.size(); i++) {
                 Bullet b = bullets.get(i);
                 b.update();
-                if (b.y < 0) bullets.remove(i--);
+                if (b.y < 0) {
+                    bullets.remove(i);
+                    i--;
+                }
             }
 
-            // Update enemies
+            // Update enemies and check collisions with player
             for (int i = 0; i < enemies.size(); i++) {
                 Enemy en = enemies.get(i);
                 en.update();
+
+                // Remove enemies that go off-screen (bug fix)
+                if (en.y > 600) {
+                    enemies.remove(i);
+                    i--;
+                    continue;
+                }
+
                 // Check collision with player
                 if (en.getBounds().intersects(player.getBounds())) {
                     gameOver = true;
@@ -133,15 +170,20 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
             // Check bullet-enemy collisions
             for (int i = 0; i < bullets.size(); i++) {
                 Bullet b = bullets.get(i);
+                boolean bulletRemoved = false;
+
                 for (int j = 0; j < enemies.size(); j++) {
                     Enemy en = enemies.get(j);
                     if (b.getBounds().intersects(en.getBounds())) {
-                        bullets.remove(i--);
+                        bullets.remove(i);
                         enemies.remove(j);
                         score++;
+                        bulletRemoved = true;
                         break;
                     }
                 }
+
+                if (bulletRemoved) i--;
             }
 
             // Randomly spawn enemies
@@ -161,8 +203,11 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    @Override public void keyReleased(KeyEvent e) {}
-    @Override public void keyTyped(KeyEvent e) {}
+    @Override
+    public void keyReleased(KeyEvent e) {}
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
 }
 
 // Main Class
